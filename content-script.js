@@ -61,12 +61,10 @@ async function get_loadSCO_dataID(a_param, scoid_param){
 
     const res = await fetch(chrome.runtime.getURL("./urls.json"))
     const private_urls = await res.json();
-    let loadSCO = private_urls.url_loadSCO;
-
+    const loadSCO = private_urls.url_loadSCO;
+    
     loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
-
-    const response = await fetch(loadSCO)
-    let page = await response.text();
+    let page = await res.text();
     
     //from the loaded response.txt, search all the string for the id
     const data_id = page.slice(
@@ -78,12 +76,12 @@ async function get_loadSCO_dataID(a_param, scoid_param){
 }
 
 
-async function get_file_via_pluginfile(file_url){
+async function get_file_via_pluginfile(data_id, file_url){
     
     //get the normal course identifiers
     let identifiers = Scrapper.get_window_params();
     //get the data id, corresponding to the data files of the course
-    const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
+    const data_id = await get_loadSCO_dataID(loadSCO, identifiers.a, identifiers.scoid);
   
     //get private url
     const res = await fetch(chrome.runtime.getURL("./urls.json"))
@@ -101,8 +99,8 @@ async function get_file_via_pluginfile(file_url){
 
 async function get_course_data_js(){
   
-    let response = await get_file_via_pluginfile("html5/data/js/data.js");
-
+    let response = await get_file_via_pluginfile(data_id, "html5/data/js/data.js");
+    
     return response
 }
 
