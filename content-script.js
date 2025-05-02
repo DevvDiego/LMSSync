@@ -1,3 +1,24 @@
+class Scrapper {
+
+    /**
+     * Search the current page params 
+     * @returns Object
+    */
+    static get_window_params(){
+        let results = {};
+
+        const window_params = new URLSearchParams(window.location.search);
+        window_params.forEach((value, key) => {
+            results[key] = value; 
+        });
+
+        return results
+    }
+
+}
+
+
+
 
 /**
  * Simplifica un JSON de estructura SCORM, extrayendo solo datos esenciales.
@@ -34,38 +55,15 @@ function remove_bad_escaping(text){
     return text;
 }
 
-/**
- * Get the "a" and "scoid" params to identify the course
- */
-function get_identifiers(){
-    //get the url when inside a scorm player
-
-    // get param "a" and param "scoid"
-    let search_params = window.location.search
-    
-    const a_param = search_params.slice(
-        search_params.indexOf("a=") + 2 , //account the two characters
-        search_params.indexOf("&") 
-    )
-
-    const scoid_param = search_params.slice(
-        search_params.indexOf("scoid=") + 6 //account the six characters
-    )
-    
-
-    return {
-        "a_param":a_param,
-        "scoid_param":scoid_param
-    }
-}
 
 //loadSco loads a file that contains the desired data ID in the plugin file
-async function get_loadSCO_dataID(base_url, a_param, scoid_param){
+async function get_loadSCO_dataID(a_param, scoid_param){
 
-    let url = base_url;
-    url = url.concat("a=", a_param, "&", "scoid=",scoid_param);
-
-    const res = await fetch(url);
+    const res = await fetch(chrome.runtime.getURL("./urls.json"))
+    const private_urls = await res.json();
+    const loadSCO = private_urls.url_loadSCO;
+    
+    loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
     let page = await res.text();
     
     //from the loaded res.txt, search all the string for the id
@@ -73,28 +71,37 @@ async function get_loadSCO_dataID(base_url, a_param, scoid_param){
         page.indexOf(".php/") + 5 , //account the five characters
         page.indexOf("/mod") 
     )
-
     
     return data_id
 }
 
-async function get_course_data_js(){
+
+async function get_file_via_pluginfile(data_id, file_url){
     
+    //get the normal course identifiers
+    let identifiers = Scrapper.get_window_params();
+    //get the data id, corresponding to the data files of the course
+    const data_id = await get_loadSCO_dataID(loadSCO, identifiers.a, identifiers.scoid);
+  
+    //get private url
     const res = await fetch(chrome.runtime.getURL("./urls.json"))
     const private_urls = await res.json();
-    let loadSCO = private_urls.url_loadSCO;
     let pluginfile = private_urls.url_pluginfile;
     
-    let identifiers = get_identifiers();
-    const data_id = await get_loadSCO_dataID(loadSCO, identifiers.a_param, identifiers.scoid_param);
-    
-    let url = pluginfile;
-    url = url.concat(data_id, "/mod_scorm/content/5/html5/data/js/data.js");
+    pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", file_url);
     
     //fetch plugin file
     const response = await fetch(url);
 
     return await response.text(); 
+}
+
+
+async function get_course_data_js(){
+  
+    let response = await get_file_via_pluginfile(data_id, "html5/data/js/data.js");
+    
+    return response
 }
 
 
@@ -118,7 +125,7 @@ const begin = async () => {
     simplified_json = simplified_json.scenes;
     
     console.log(simplified_json);
-    console.log(simplified_json[3].slides[0]);
+    console.log(simplified_json[3].slides[0].html5url);
 
 }
 
