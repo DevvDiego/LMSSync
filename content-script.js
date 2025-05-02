@@ -59,9 +59,8 @@ function remove_bad_escaping(text){
 //loadSco loads a file that contains the desired data ID in the plugin file
 async function get_loadSCO_dataID(a_param, scoid_param){
 
-    const res = await fetch(chrome.runtime.getURL("./urls.json"))
-    const private_urls = await res.json();
-    let loadSCO = private_urls.url_loadSCO;
+    //get private url
+    let loadSCO = private_urls.loadSCO;
     
     loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
     
@@ -86,9 +85,7 @@ async function get_file_via_pluginfile(file_url){
     const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
   
     //get private url
-    const res = await fetch(chrome.runtime.getURL("./urls.json"))
-    const private_urls = await res.json();
-    let pluginfile = private_urls.url_pluginfile;
+    let pluginfile = private_urls.pluginfile;
     
     pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", file_url);
     
@@ -101,7 +98,7 @@ async function get_file_via_pluginfile(file_url){
 
 async function get_course_data_js(){
   
-    let response = await get_file_via_pluginfile( "html5/data/js/data.js");
+    let response = await get_file_via_pluginfile("html5/data/js/data.js");
     
     return response
 }
@@ -131,19 +128,27 @@ const begin = async () => {
     simplified_json = simplified_json.scenes;
     
     console.log(simplified_json);
-    console.log(simplified_json[3].slides[0].html5url);
+    console.log(simplified_json[5].slides[0].html5url);
 
 
-    get_file_via_pluginfile(simplified_json[3].slides[0].html5url);
+    get_file_via_pluginfile(simplified_json[5].slides[0].html5url);
 
 }
 
 
+const loadData = async () =>{
+    const res = await fetch(chrome.runtime.getURL("private.json"))
+    const data = await res.json();
+
+    private_urls = data
+
+    begin();
+}
 
 
-begin();
+let private_urls = {}
 
-
+loadData();
 
 // fetch("/html5/data/js/5hfZTtoNyJQ.js", { credentials: 'include' })
 //   .then(response => response.text())
