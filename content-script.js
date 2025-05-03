@@ -142,15 +142,14 @@ async function get_file_via_pluginfile(file_url){
     pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", file_url);
 
     //fetch plugin file
-    return Scrapper.fetcher(pluginfile);
+    return Scrapper.fetcher(pluginfile, Scrapper.r_type.text);
 }
 
 
 const begin = async () => {
 
-    let text = await get_file_via_pluginfile("html5/data/js/data.js");
-    
-
+    let data_js = await get_file_via_pluginfile("html5/data/js/data.js");
+    let text = data_js[0]
 
     // Remove javascript code from the text    
     text = text.replace("window.globalProvideData('data', '","");
@@ -180,9 +179,7 @@ const loadData = async () =>{
     const res = await fetch(chrome.runtime.getURL("private.json"))
     const data = await res.json();
 
-    request_urls = data // set the script global request url to the external file urls
-
-    await Scrapper.fetcher(request_urls, Scrapper.r_type.text)
+    private_urls = data // set the script global request url to the external file urls
 
 
     begin();
