@@ -1,5 +1,18 @@
 class Scrapper {
 
+    /** Error flags */
+    static err = {
+        http: "[SCRAPPER] http error:",
+        fetch: "[SCRAPPER] fetch error",
+        param: "[SCRAPPER] bad function params error"
+    }
+
+    /** flag to mark what return type you want from the fetcher */
+    static r_type = {
+        json: 1,
+        text: 0
+    }
+
     /**
      * Search the current page params 
      * @returns Object
@@ -13,6 +26,46 @@ class Scrapper {
         });
 
         return results
+    }
+
+    /**
+     * Fetch an array of urls, and return them resolved 
+     * returns a promise with an array of the responses of the given urls array
+     * 
+     * @param {Array} urls Array of urls (a string will be converted to array)
+     * @param {Scrapper.r_type} response_mode
+     * 
+     * @return {Promise}
+     */
+    static async fetcher(urls, response_mode){
+        try{
+            //Make sure the urls are always an array
+            if( !Array.isArray(urls) ){ urls = [urls] } 
+            //store all promises given by the map and wait until resolved
+            //these include the fetch and .then
+
+            const data = await Promise.all(
+                urls.map( async url => { // might be slower using async instead of .then, but worth the legibility
+                    
+                    const res = await fetch(url)
+                    if(!res.ok){ throw new Error(`${Scrapper.err.http} ${url} STATUS: ${res.status}`)}
+                    
+                    // Return the request body in the format specified
+                    switch(response_mode){
+                        case Scrapper.r_type.json: return res.json();
+                        case Scrapper.r_type.text: return res.text();
+                        default: throw Scrapper.err.param;
+                    }
+                })
+            );
+
+            return data;
+        
+        } catch (error){
+            console.error(error);
+            throw error //? delegate, should i keep this?
+
+        }
     }
 
 }
@@ -86,31 +139,18 @@ async function get_file_via_pluginfile(file_url){
   
     //get private url
     let pluginfile = private_urls.pluginfile;
-    
     pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", file_url);
-    
+
     //fetch plugin file
-    const response = await fetch(pluginfile);
-
-    return await response.text(); 
-}
-
-
-async function get_course_data_js(){
-  
-    let response = await get_file_via_pluginfile("html5/data/js/data.js");
-    
-    return response
-}
-
-async function parse_course(){
-
+    return Scrapper.fetcher(pluginfile);
 }
 
 
 const begin = async () => {
 
-    let text = await get_course_data_js()
+    let text = await get_file_via_pluginfile("html5/data/js/data.js");
+    
+
 
     // Remove javascript code from the text    
     text = text.replace("window.globalProvideData('data', '","");
@@ -140,23 +180,16 @@ const loadData = async () =>{
     const res = await fetch(chrome.runtime.getURL("private.json"))
     const data = await res.json();
 
-    private_urls = data
+    request_urls = data // set the script global request url to the external file urls
+
+    await Scrapper.fetcher(request_urls, Scrapper.r_type.text)
+
 
     begin();
+
 }
 
 
 let private_urls = {}
 
 loadData();
-
-// fetch("/html5/data/js/5hfZTtoNyJQ.js", { credentials: 'include' })
-//   .then(response => response.text())
-//   .then(jsContent => {
-//     const match = jsContent.match(/window\.globalProvideData\s*=\s*({.*?});/s);
-//     if (match) {
-//       const jsonData = JSON.parse(match[1]);
-//       chrome.runtime.sendMessage({ type: "SCORM_DATA", data: jsonData });
-//     }
-//   })
-//   .catch(error => console.error("Error:", error));
