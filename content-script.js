@@ -108,12 +108,22 @@ function remove_bad_escaping(text){
     return text;
 }
 
-
+/**
+ * 
+ * @param {string} text 
+ * @returns correct format json
+ */
 function correct_text_to_json(text){
+    // Remove javascript code from the text    
     
     let data = text;
-    // Remove javascript code from the text    
-    data = data.replace("window.globalProvideData('data', '","");
+    
+    // ! REMEMBER: replace doesnt throw errors, if the string isnt found, it wont replace anything.
+    // case 1, its a data file
+    data = data.replace("window.globalProvideData('data', '", "");
+    // case 2, its a slides file
+    data = data.replace("window.globalProvideData('slide', '", "");
+    
     data = data.replace("');","");
 
     // remove bad escape characters
@@ -146,9 +156,14 @@ async function get_loadSCO_dataID(a_param, scoid_param){
     return data_id
 }
 
+/**
+ * 
+ * @param {string} html5url The url to request inside the pluginfile api
+ * @returns file in text format
+ */
+async function get_file_via_pluginfile(html5url){
 
-async function get_file_via_pluginfile(file_url){
-    
+
     //get the normal course identifiers
     let identifiers = Scrapper.get_window_params();
     //get the data id, corresponding to the data files of the course
@@ -156,7 +171,7 @@ async function get_file_via_pluginfile(file_url){
   
     //get private url
     let pluginfile = private_urls.pluginfile;
-    pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", file_url);
+    pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", html5url);
 
     //fetch plugin file
     return Scrapper.fetcher(pluginfile, Scrapper.r_type.text);
@@ -168,17 +183,21 @@ const begin = async () => {
     let data_js = await get_file_via_pluginfile("html5/data/js/data.js");
     let text = data_js[0]
 
+    // full json
     let json = correct_text_to_json(text);
 
     //get the requierd or wanted data (currently only scenes are retrieved)
     let simplified_json = simplify_json(json);
-    simplified_json = simplified_json.scenes;
-    
-    console.log(simplified_json);
-    console.log(simplified_json[5].slides[0].html5url);
 
+    //access the retrieved obj to get all the scenes of the course scenes
+    let scenes = simplified_json.scenes;
+    console.log("simplified json scenes")
+    console.log(scenes)
 
-    get_file_via_pluginfile(simplified_json[5].slides[0].html5url);
+    let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url);
+    console.log(file)
+    file = correct_text_to_json(file[0]);
+    console.log(file)
 
 }
 
