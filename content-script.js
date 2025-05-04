@@ -109,6 +109,23 @@ function remove_bad_escaping(text){
 }
 
 
+function correct_text_to_json(text){
+    
+    let data = text;
+    // Remove javascript code from the text    
+    data = data.replace("window.globalProvideData('data', '","");
+    data = data.replace("');","");
+
+    // remove bad escape characters
+    data = remove_bad_escaping(data);
+    
+    //convert to json
+    let ttj = JSON.parse(data);
+
+    return ttj
+}
+
+
 //loadSco loads a file that contains the desired data ID in the plugin file
 async function get_loadSCO_dataID(a_param, scoid_param){
 
@@ -151,16 +168,7 @@ const begin = async () => {
     let data_js = await get_file_via_pluginfile("html5/data/js/data.js");
     let text = data_js[0]
 
-    // Remove javascript code from the text    
-    text = text.replace("window.globalProvideData('data', '","");
-    text = text.replace("');","");
-
-    
-    // remove bad escape characters
-    let corrected_text = remove_bad_escaping(text);
-
-    //convert to json
-    let json = JSON.parse(corrected_text);
+    let json = correct_text_to_json(text);
 
     //get the requierd or wanted data (currently only scenes are retrieved)
     let simplified_json = simplify_json(json);
