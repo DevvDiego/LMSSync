@@ -1,5 +1,5 @@
 class Scrapper {
-
+    // !REFACTOR better use of error names, add more specific helpful strings
     /** Error flags */
     static err = {
         http: "[SCRAPPER] http error:",
@@ -32,15 +32,15 @@ class Scrapper {
      * Fetch an array of urls, and return them resolved 
      * returns a promise with an array of the responses of the given urls array
      * 
-     * @param {Array} urls Array of urls (a string will be converted to array)
+     * @param {Array} urls Array of urls
      * @param {Scrapper.r_type} response_mode
      * 
      * @return {Promise}
      */
-    static async fetcher(urls, response_mode){
+    static async array_fetch(urls, response_mode){
         try{
             //Make sure the urls are always an array
-            if( !Array.isArray(urls) ){ urls = [urls] } 
+            if( !Array.isArray(urls) ){ throw Error(Scrapper.err.param) } 
             //store all promises given by the map and wait until resolved
             //these include the fetch and .then
 
@@ -67,6 +67,28 @@ class Scrapper {
 
         }
     }
+
+
+    /**
+     * Fetch a single url 
+     * returns a promise with the response of the fetched url
+     * 
+     * @param {string} url The url as a string to fetch
+     * @param {Scrapper.r_type} response_mode Scrapper.err value
+     * 
+     * @return {Promise}
+     */
+    static async str_fetch(url, response_mode){
+        //wrapper function of array_fetch, just to return the first index
+
+        if(typeof url !== "string"){ throw Error(Scrapper.err.param) }
+
+        let result = await Scrapper.array_fetch([url], response_mode);
+    
+        return result[0] //as array fetch returns an array, just give the first index.
+    
+    }
+
 
 }
 
@@ -156,6 +178,7 @@ async function get_loadSCO_dataID(a_param, scoid_param){
     return data_id
 }
 
+// !REFACTOR add better JSDoc comments, verify params or separate logic
 /**
  * 
  * @param {string} html5url The url to request inside the pluginfile api
@@ -169,19 +192,20 @@ async function get_file_via_pluginfile(html5url){
     //get the data id, corresponding to the data files of the course
     const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
   
+    // !REFACTOR, better use of variable names
     //get private url
     let pluginfile = private_urls.pluginfile;
     pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", html5url);
 
     //fetch plugin file
-    return Scrapper.fetcher(pluginfile, Scrapper.r_type.text);
+    if(typeof html5url === "string"){ return Scrapper.str_fetch(pluginfile, Scrapper.r_type.text) }
 }
 
 
 const begin = async () => {
 
     let data_js = await get_file_via_pluginfile("html5/data/js/data.js");
-    let text = data_js[0]
+    let text = data_js
 
     // full json
     let json = correct_text_to_json(text);
@@ -191,13 +215,12 @@ const begin = async () => {
 
     //access the retrieved obj to get all the scenes of the course scenes
     let scenes = simplified_json.scenes;
-    console.log("simplified json scenes")
     console.log(scenes)
 
     let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url);
     console.log(file)
-    file = correct_text_to_json(file[0]);
-    console.log(file)
+    // file = correct_text_to_json(file[0]);
+    // console.log(file)
 
 }
 
