@@ -1,10 +1,12 @@
 class Scrapper {
-    // !REFACTOR better use of error names, add more specific helpful strings
     /** Error flags */
     static err = {
         http: "[SCRAPPER] http error:",
         fetch: "[SCRAPPER] fetch error",
-        param: "[SCRAPPER] bad function params error"
+        param: "[SCRAPPER] bad function params error",
+        r_type: "[SCRAPPER] unknown r_type",
+        url_type: "[SCRAPPER] bad url type" 
+
     }
 
     /** flag to mark what return type you want from the fetcher */
@@ -40,7 +42,7 @@ class Scrapper {
     static async array_fetch(urls, response_mode){
         try{
             //Make sure the urls are always an array
-            if( !Array.isArray(urls) ){ throw Error(Scrapper.err.param) } 
+            if( !Array.isArray(urls) ){ throw Error(Scrapper.err.url_type) } 
             //store all promises given by the map and wait until resolved
             //these include the fetch and .then
 
@@ -54,7 +56,7 @@ class Scrapper {
                     switch(response_mode){
                         case Scrapper.r_type.json: return res.json();
                         case Scrapper.r_type.text: return res.text();
-                        default: throw Scrapper.err.param;
+                        default: throw Scrapper.err.r_type;
                     }
                 })
             );
@@ -81,7 +83,7 @@ class Scrapper {
     static async str_fetch(url, response_mode){
         //wrapper function of array_fetch, just to return the first index
 
-        if(typeof url !== "string"){ throw Error(Scrapper.err.param) }
+        if(typeof url !== "string"){ throw Error(Scrapper.err.url_type) }
 
         let result = await Scrapper.array_fetch([url], response_mode);
     
