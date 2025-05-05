@@ -178,13 +178,15 @@ async function get_loadSCO_dataID(a_param, scoid_param){
     return data_id
 }
 
-// !REFACTOR add better JSDoc comments, verify params or separate logic
+
 /**
+ * Fetch a url or an array of urls. 
  * 
- * @param {string} html5url The url to request inside the pluginfile api
- * @returns file in text format
+ * @param {string|string[]} urls The url or array of urls to request inside the pluginfile api
+ * @param {"json"|"text"} response_mode The response you expect, a json or plain text
+ * @returns file in the requested format
  */
-async function get_file_via_pluginfile(html5url){
+async function get_file_via_pluginfile(urls, response_mode){
 
 
     //get the normal course identifiers
@@ -192,19 +194,43 @@ async function get_file_via_pluginfile(html5url){
     //get the data id, corresponding to the data files of the course
     const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
   
-    // !REFACTOR, better use of variable names
-    //get private url
-    let pluginfile = private_urls.pluginfile;
-    pluginfile = pluginfile.concat(data_id, "/mod_scorm/content/5/", html5url);
+    let pluginfile_url = private_urls.pluginfile;
+    pluginfile_url = pluginfile_url.concat(data_id, "/mod_scorm/content/5/");
+    let req_url = "";
 
-    //fetch plugin file
-    if(typeof html5url === "string"){ return Scrapper.str_fetch(pluginfile, Scrapper.r_type.text) }
+    // parameter is a single url 
+    if( typeof urls === "string" ){
+        //add final data to the req url 
+        req_url = pluginfile_url.concat(urls)        
+    
+        switch(response_mode){
+            case "json": return await Scrapper.str_fetch(req_url, Scrapper.r_type.json);
+            case "text": return await Scrapper.str_fetch(req_url, Scrapper.r_type.text);
+        }
+    
+    }
+
+    if( Array.isArray(urls) ){
+
+        //map array and concat the pluginfile base url
+        req_url = urls.map((url) => {
+            return pluginfile_url.concat(url);
+        });
+
+        switch(response_mode){
+            case "json": return Scrapper.array_fetch(req_url, Scrapper.r_type.json);
+            case "text": return Scrapper.array_fetch(req_url, Scrapper.r_type.text);
+        }
+
+    }
+
+
 }
 
 
 const begin = async () => {
 
-    let data_js = await get_file_via_pluginfile("html5/data/js/data.js");
+    let data_js = await get_file_via_pluginfile("html5/data/js/data.js", "text");
     let text = data_js
 
     // full json
@@ -217,7 +243,7 @@ const begin = async () => {
     let scenes = simplified_json.scenes;
     console.log(scenes)
 
-    let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url);
+    let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
     console.log(file)
     // file = correct_text_to_json(file[0]);
     // console.log(file)
