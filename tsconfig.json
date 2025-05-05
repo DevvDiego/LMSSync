@@ -1,12 +1,17 @@
 {
     "compilerOptions": {
-      "target": "ES6",                // Compatibilidad con navegadores
-      "module": "ES6",                // Módulos ES para Chrome
-      "strict": true,                 // Habilita el tipado estricto
-      "outDir": "./public",             // Carpeta de salida para JS
-      "rootDir": "./src",             // Carpeta de origen para TS
-      "moduleResolution": "node",
-      "esModuleInterop": true         // Para compatibilidad con módulos
+        "lib": [
+            "DOM", "ESNext", //base types
+            "ES2021.String"  //type added for replaceAll
+        ],
+        "target": "ES6",                // Compatibilidad con navegadores
+        "module": "ESNext",
+        "strict": true,                 // Habilita el tipado estricto
+        "outDir": "./public",             // Carpeta de salida para JS
+        "rootDir": "./src",             // Carpeta de origen para TS
+        "moduleResolution": "node",
+        "esModuleInterop": true,        // Para compatibilidad con módulos   
+        "isolatedModules": true
     },
     "include": ["src/**/*.ts"]        // Archivos a compilar
-  }
+}

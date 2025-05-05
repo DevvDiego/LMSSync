@@ -1,3 +1,6 @@
+import type { WindowParams, SCORM_JSON, SimplifiedSCORM, private_urls } from "./types/all.interface";
+
+
 class Scrapper {
     /** Error flags */
     static err = {
@@ -15,31 +18,31 @@ class Scrapper {
         text: 0
     }
 
-    /**
-     * Search the current page params 
-     * @returns Object
-    */
-    static get_window_params(){
-        let results = {};
-
+   
+    // ! FIND BETTER WAY TO TYPE URL PARAMS 
+    static get_window_params(): WindowParams {
+        
         const window_params = new URLSearchParams(window.location.search);
-        window_params.forEach((value, key) => {
-            results[key] = value; 
-        });
-
-        return results
+        
+    
+        let results: WindowParams = {
+            a: window_params.get("a") || "",
+            scoid: window_params.get("scoid") || ""
+        };
+    
+        // window_params.forEach((value, key) => {
+        //     results[key] = value;
+        // });
+    
+        return results;
     }
 
     /**
      * Fetch an array of urls, and return them resolved 
      * returns a promise with an array of the responses of the given urls array
      * 
-     * @param {Array} urls Array of urls
-     * @param {Scrapper.r_type} response_mode
-     * 
-     * @return {Promise}
-     */
-    static async array_fetch(urls, response_mode){
+    */
+    static async array_fetch(urls: Array<string>, response_mode:any){
         try{
             //Make sure the urls are always an array
             if( !Array.isArray(urls) ){ throw Error(Scrapper.err.url_type) } 
@@ -74,13 +77,8 @@ class Scrapper {
     /**
      * Fetch a single url 
      * returns a promise with the response of the fetched url
-     * 
-     * @param {string} url The url as a string to fetch
-     * @param {Scrapper.r_type} response_mode Scrapper.err value
-     * 
-     * @return {Promise}
-     */
-    static async str_fetch(url, response_mode){
+    */
+    static async str_fetch(url: string, response_mode:any){
         //wrapper function of array_fetch, just to return the first index
 
         if(typeof url !== "string"){ throw Error(Scrapper.err.url_type) }
@@ -102,17 +100,17 @@ class Scrapper {
  * @param {Object} jsonData - JSON original (con scenes, slides, etc.).
  * @returns {Object} JSON limpio con solo id, lmsId, y slides procesadas.
  */
-function simplify_json(data) {
+function simplify_json(data: SCORM_JSON): SimplifiedSCORM {
     return {
         scenes: (data.scenes || []).map(scene => ({
             id: scene.id,
-            lmsId: scene.lmsId || "", // Valor por defecto si no existe
+            lmsId: scene.lmsId || "",
             slides: (scene.slides || [])
-                .filter(slide => slide.html5url) // Filtramos slides con html5url
+                .filter(slide => slide.html5url)
                 .map(slide => ({
                     id: slide.id,
-                    html5url: slide.html5url,
-                    title: slide.title || "" // Valor por defecto para título
+                    html5url: slide.html5url!, // "!" porque .filter() asegura que existe
+                    title: slide.title || ""
                 }))
         }))
     };
@@ -124,7 +122,7 @@ function simplify_json(data) {
  * 
  * @param {string} text 
  */
-function remove_bad_escaping(text){
+function remove_bad_escaping(text: string): string{
     
     text = text.replaceAll("\\'", "'")
     text = text.replaceAll("\\\\\"", "\\\"")
@@ -137,7 +135,7 @@ function remove_bad_escaping(text){
  * @param {string} text 
  * @returns correct format json
  */
-function correct_text_to_json(text){
+function correct_text_to_json(text: string): any{
     // Remove javascript code from the text    
     
     let data = text;
@@ -161,14 +159,14 @@ function correct_text_to_json(text){
 
 
 //loadSco loads a file that contains the desired data ID in the plugin file
-async function get_loadSCO_dataID(a_param, scoid_param){
+async function get_loadSCO_dataID(page_params: WindowParams){
 
     //get private url
-    let loadSCO = private_urls.loadSCO;
+    let loadSCO = p_urls.loadSCO;
     
-    loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
+    let url = loadSCO.concat("a=", page_params.a, "&", "scoid=", page_params.scoid);
     
-    const response = await fetch(loadSCO)
+    const response = await fetch(url)
     let page = await response.text();
     
     //from the loaded response.txt, search all the string for the id
@@ -184,21 +182,18 @@ async function get_loadSCO_dataID(a_param, scoid_param){
 /**
  * Fetch a url or an array of urls. 
  * 
- * @param {string|string[]} urls The url or array of urls to request inside the pluginfile api
- * @param {"json"|"text"} response_mode The response you expect, a json or plain text
- * @returns file in the requested format
  */
-async function get_file_via_pluginfile(urls, response_mode){
-
+async function get_file_via_pluginfile(urls: string|string[], response_mode: string): Promise<any>{
+    // ! change param types into the class scrapper types
 
     //get the normal course identifiers
     let identifiers = Scrapper.get_window_params();
     //get the data id, corresponding to the data files of the course
-    const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
+    const data_id = await get_loadSCO_dataID(identifiers);
   
-    let pluginfile_url = private_urls.pluginfile;
+    let pluginfile_url = p_urls.pluginfile;
     pluginfile_url = pluginfile_url.concat(data_id, "/mod_scorm/content/5/");
-    let req_url = "";
+    let req_url;
 
     // parameter is a single url 
     if( typeof urls === "string" ){
@@ -236,7 +231,7 @@ const begin = async () => {
     let text = data_js
 
     // full json
-    let json = correct_text_to_json(text);
+    let json:SCORM_JSON = correct_text_to_json(text);
 
     //get the requierd or wanted data (currently only scenes are retrieved)
     let simplified_json = simplify_json(json);
@@ -257,7 +252,7 @@ const loadData = async () =>{
     const res = await fetch(chrome.runtime.getURL("private.json"))
     const data = await res.json();
 
-    private_urls = data // set the script global request url to the external file urls
+    p_urls = data // set the script global request url to the external file urls
 
 
     begin();
@@ -265,6 +260,6 @@ const loadData = async () =>{
 }
 
 
-let private_urls = {}
+let p_urls:private_urls;
 
-loadData();
+loadData(); 
