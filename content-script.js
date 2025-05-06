@@ -95,68 +95,81 @@ class Scrapper {
 }
 
 
+class Scorm_parser {
+        
+    /**
+     * Remove javascript code from the text  
+    */ 
+    static remove_js(text){
+
+        // ! REMEMBER: replace doesnt throw errors, if the string isnt found, it wont replace anything.
+        // case 1, its a data file
+        text = text.replace("window.globalProvideData('data', '", "");
+        // case 2, its a slides file
+        text = text.replace("window.globalProvideData('slide', '", "");
+        
+        text = text.replace("');","");
+
+        return text
+    }
 
 
-/**
- * Simplifica un JSON de estructura SCORM, extrayendo solo datos esenciales.
- * @param {Object} jsonData - JSON original (con scenes, slides, etc.).
- * @returns {Object} JSON limpio con solo id, lmsId, y slides procesadas.
- */
-function simplify_json(data) {
-    return {
-        scenes: (data.scenes || []).map(scene => ({
-            id: scene.id,
-            lmsId: scene.lmsId || "", // Valor por defecto si no existe
-            slides: (scene.slides || [])
-                .filter(slide => slide.html5url) // Filtramos slides con html5url
-                .map(slide => ({
-                    id: slide.id,
-                    html5url: slide.html5url,
-                    title: slide.title || "" // Valor por defecto para título
-                }))
-        }))
-    };
-}
+    /**
+     * Finds specific strings being badly escaped, and corrects them
+     * 
+     * @param {string} text 
+     */
+    static remove_bad_escaping(text){
+        
+        text = text.replaceAll("\\'", "'")
+        text = text.replaceAll("\\\\\"", "\\\"")
+
+        return text;
+    }
 
 
-/**
- * Finds case specific strings being badly escaped, and corrects them
- * 
- * @param {string} text 
- */
-function remove_bad_escaping(text){
-    
-    text = text.replaceAll("\\'", "'")
-    text = text.replaceAll("\\\\\"", "\\\"")
 
-    return text;
-}
+    /**
+     * Simplifica un JSON de estructura SCORM, extrayendo solo datos esenciales.
+     * @param {Object} jsonData - JSON original (con scenes, slides, etc.).
+     * @returns {Object} JSON limpio con solo id, lmsId, y slides procesadas.
+     */
+    static get_scenes(data) {
+        return {
+            scenes: (data.scenes || []).map(scene => ({
+                id: scene.id,
+                lmsId: scene.lmsId || "", // Valor por defecto si no existe
+                slides: (scene.slides || [])
+                    .filter(slide => slide.html5url) // Filtramos slides con html5url
+                    .map(slide => ({
+                        id: slide.id,
+                        html5url: slide.html5url,
+                        title: slide.title || "" // Valor por defecto para título
+                    }))
+            }))
+        };
+    }
 
-/**
- * 
- * @param {string} text 
- * @returns correct format json
- */
-function correct_text_to_json(text){
-    // Remove javascript code from the text    
-    
-    let data = text;
-    
-    // ! REMEMBER: replace doesnt throw errors, if the string isnt found, it wont replace anything.
-    // case 1, its a data file
-    data = data.replace("window.globalProvideData('data', '", "");
-    // case 2, its a slides file
-    data = data.replace("window.globalProvideData('slide', '", "");
-    
-    data = data.replace("');","");
+        
+    /**
+     * 
+     * @param {string} text 
+     * @returns correct format json
+     */
+    static cleanse(text){
+        text = Scorm_parser.remove_js(text);
+        text = Scorm_parser.remove_bad_escaping(text);
 
-    // remove bad escape characters
-    data = remove_bad_escaping(data);
-    
-    //convert to json
-    let ttj = JSON.parse(data);
+        return text
+    }
 
-    return ttj
+
+    static toJson(text){
+        //convert to json
+        return JSON.parse(text);
+
+    }
+
 }
 
 
@@ -231,24 +244,26 @@ async function get_file_via_pluginfile(urls, response_mode){
 
 
 const begin = async () => {
+    let text;
+    let json; 
+
 
     let data_js = await get_file_via_pluginfile("html5/data/js/data.js", "text");
-    let text = data_js
+    text = data_js;
 
-    // full json
-    let json = correct_text_to_json(text);
+    text = Scorm_parser.cleanse(text);
+    json = Scorm_parser.toJson(text);
 
-    //get the requierd or wanted data (currently only scenes are retrieved)
-    let simplified_json = simplify_json(json);
-
-    //access the retrieved obj to get all the scenes of the course scenes
-    let scenes = simplified_json.scenes;
-    console.log(scenes)
+    json = Scorm_parser.get_scenes(json);
+    let scenes = json.scenes;
 
     let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
     console.log(file)
-    // file = correct_text_to_json(file[0]);
-    // console.log(file)
+    // file = correct_text_to_json(file);
+    
+    
+    // data.slideLayers[0].objects[0].textLib[0].vartext.blocks[0].spans[0].text
+    // console.log(file) 
 
 }
 
