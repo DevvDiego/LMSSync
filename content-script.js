@@ -150,6 +150,10 @@ class Scorm_parser {
         };
     }
 
+    static get_slide_info(data){
+
+    }
+
         
     /**
      * 
@@ -181,8 +185,7 @@ async function get_loadSCO_dataID(a_param, scoid_param){
     
     loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
     
-    const response = await fetch(loadSCO)
-    let page = await response.text();
+    let page = await Scrapper.str_fetch(loadSCO, Scrapper.r_type.text);
     
     //from the loaded response.txt, search all the string for the id
     const data_id = page.slice(
@@ -257,11 +260,15 @@ const begin = async () => {
     json = Scorm_parser.get_scenes(json);
     let scenes = json.scenes;
 
-    let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
-    console.log(file)
+    // let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
+    // console.log(file)
     // file = correct_text_to_json(file);
     
-    
+    text = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
+    text = Scorm_parser.cleanse(text);
+    json = Scorm_parser.toJson(text);
+
+    console.log(json)
     // data.slideLayers[0].objects[0].textLib[0].vartext.blocks[0].spans[0].text
     // console.log(file) 
 
