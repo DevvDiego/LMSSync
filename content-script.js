@@ -174,6 +174,88 @@ class Scorm_parser {
 
     }
 
+    
+    static parse_slide(slideToParse) {
+        const { id, title, slideNumberInScene, lmsId } = slideToParse;
+
+        // Crear una nueva estructura basada en parse_slide.json
+        const convertedJson = {
+            title: title,
+            slideNumberInScene: slideNumberInScene,
+            lmsId: lmsId,
+            id: id,
+            slideLayers: []
+        };
+
+        // Iterar sobre los objetos en slideLayers
+        slideToParse.slideLayers.forEach((layer) => {
+            const newLayer = {
+                objects: []
+            };
+
+            layer.objects.forEach((obj) => {
+                const newTextLib = {
+                    //? Are these useful?
+                    // kind: "textdata",
+                    // id: obj.textLib[0].id,
+                    vartext: {
+                        blocks: obj.textLib[0].vartext.blocks.map(block => ({
+                            spans: block.spans.map(span => ({
+                                text: span.text,
+                                style: {
+                                    fontFamily: span.style.fontFamily, 
+                                    fontSize: span.style.fontSize,
+                                    fontIsBold: span.style.fontIsBold,
+                                    fontIsItalic: span.style.fontIsItalic
+                                }
+                            })),
+                            style: block.style
+                        }))
+                    }
+                };
+
+                newLayer.objects.push({
+                    textLib: [newTextLib],
+                    data: {
+                        vectorData: {
+                            altText: obj.data.vectorData.altText
+                        } 
+                    }
+                });
+            });
+
+            convertedJson.slideLayers.push(newLayer);
+        });
+
+        return convertedJson;
+    }
+
+
+    static reduce_slide_depth(parsedJson) {
+        const { title, slideNumberInScene, lmsId, id } = parsedJson;
+        const simplifiedLayers = [];
+
+        parsedJson.slideLayers.forEach(layer => {
+            layer.objects.forEach(obj => {
+                if (obj.textLib && obj.textLib.length > 0) {
+                    const textLib = obj.textLib[0].vartext.blocks.map(block => ({
+                        spans: block.spans,
+                        style: block.style
+                    }));
+                    simplifiedLayers.push({ textLib });
+                }
+            });
+        });
+
+        return {
+            title,
+            slideNumberInScene,
+            lmsId,
+            id,
+            slideLayers: simplifiedLayers
+        };
+    }
+
 }
 
 
@@ -290,3 +372,61 @@ const loadData = async () =>{
 let private_urls = {}
 
 loadData();
+
+
+
+
+
+
+async function doAllFetch(){
+    let text;
+    let json; 
+
+    let data_js = await get_file_via_pluginfile("html5/data/js/data.js", "text");
+    text = data_js;
+
+    text = Scorm_parser.cleanse(text);
+    json = Scorm_parser.toJson(text);
+
+
+    json = Scorm_parser.get_scenes(json);
+    let scenes = json.scenes;
+    // console.log(scenes)
+   
+    // !doesnt work on some slides
+    text = await get_file_via_pluginfile(scenes[3].slides[3].html5url, "text");
+    text = Scorm_parser.cleanse(text);
+    json = Scorm_parser.toJson(text);
+
+    console.log(json)
+
+    json = Scorm_parser.parse_slide(json)
+    json = Scorm_parser.reduce_slide_depth(json)
+
+    // let my_scenes = [];
+
+    // console.clear();
+
+    // my_scenes = await scenes[3].slides.map(async (slide)=>{
+
+    //     // console.log(slide.html5url)
+
+    //     text = await get_file_via_pluginfile(slide.html5url, "text");
+    //     text = Scorm_parser.cleanse(text);
+    //     json = Scorm_parser.toJson(text);
+    
+    //     json = parse_slide(json);
+    //     json = simplifyParsedJson(json);
+    
+    //     console.log(json)
+
+    //     return json
+
+    // })
+
+
+
+
+
+    return json
+}
