@@ -335,18 +335,24 @@ class Scorm_parser {
 }
 
 
-//loadSco loads a file that contains the desired data ID in the plugin file
-async function get_loadSCO_dataID(a_param, scoid_param){
+/**
+ * loads a file from the current window that contains the desired data ID for the pluginfile
+ * @returns data id of the course in the current window
+ */
+async function get_course_data_id(){
+
+    //get the normal course identifiers
+    let identifiers = Scrapper.get_window_params();
 
     //get private url
     let loadSCO = private_urls.loadSCO;
     
-    loadSCO = loadSCO.concat("a=", a_param, "&", "scoid=",scoid_param);
+    loadSCO = loadSCO.concat("a=", identifiers.a, "&", "scoid=", identifiers.scoid);
     
     let page = await Scrapper.str_fetch(loadSCO, Scrapper.r_type.text);
     
     //from the loaded response.txt, search all the string for the id
-    const data_id = page.slice(
+    let data_id = page.slice(
         page.indexOf(".php/") + 5 , //account the five characters
         page.indexOf("/mod") 
     )
@@ -358,17 +364,12 @@ async function get_loadSCO_dataID(a_param, scoid_param){
 /**
  * Fetch a url or an array of urls. 
  * 
+ * @param {string} data_id The course id to use in pluginfile
  * @param {string|string[]} urls The url or array of urls to request inside the pluginfile api
  * @param {"json"|"text"} response_mode The response you expect, a json or plain text
  * @returns file in the requested format
  */
-async function get_file_via_pluginfile(urls, response_mode){
-
-
-    //get the normal course identifiers
-    let identifiers = Scrapper.get_window_params();
-    //get the data id, corresponding to the data files of the course
-    const data_id = await get_loadSCO_dataID(identifiers.a, identifiers.scoid);
+async function get_file_via_pluginfile(data_id, urls, response_mode){
   
     let pluginfile_url = private_urls.pluginfile;
     pluginfile_url = pluginfile_url.concat(data_id, "/mod_scorm/content/5/");
@@ -407,28 +408,19 @@ async function get_file_via_pluginfile(urls, response_mode){
 const begin = async () => {
     let text;
     let json; 
+    let data_id = await get_course_data_id();
 
 
-    let data_js = await get_file_via_pluginfile("html5/data/js/data.js", "text");
-    text = data_js;
-
-    text = Scorm_parser.cleanse(text);
-    json = Scorm_parser.toJson(text);
-
-    json = Scorm_parser.get_scenes(json);
-    let scenes = json.scenes;
-
-    // let file = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
-    // console.log(file)
-    // file = correct_text_to_json(file);
+    let raw_file = await get_file_via_pluginfile(data_id, "html5/data/js/data.js", "text");
     
-    text = await get_file_via_pluginfile(scenes[3].slides[0].html5url, "text");
-    text = Scorm_parser.cleanse(text);
-    json = Scorm_parser.toJson(text);
-
+    json = Scorm_parser.get_scenes(
+        Scorm_parser.toJson(
+            Scorm_parser.cleanse(raw_file)
+        )
+    )
+    console.log("file from datajs")
     console.log(json)
-    // data.slideLayers[0].objects[0].textLib[0].vartext.blocks[0].spans[0].text
-    // console.log(file) 
+
 
 }
 
@@ -440,7 +432,7 @@ const loadData = async () =>{
     private_urls = data // set the script global request url to the external file urls
 
 
-    // begin();
+    begin();
 
 }
 
@@ -448,6 +440,12 @@ const loadData = async () =>{
 let private_urls = {}
 
 loadData();
+
+
+
+
+
+
 
 
 async function doAllFetch(){
