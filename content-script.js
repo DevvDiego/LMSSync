@@ -401,21 +401,57 @@ async function get_file_via_pluginfile(data_id, urls, response_mode){
 
 
 const begin = async () => {
-    let json; 
-    let data_id = await get_course_data_id();
-
-
-    let raw_file = await get_file_via_pluginfile(data_id, "html5/data/js/data.js", "text");
+    const data_id = await get_course_data_id();
+    const raw_file = await get_file_via_pluginfile(data_id, "html5/data/js/data.js", "text");
+    let json;
+    let scenes; 
     
+    // Apply all cleansing functions
     json = Scorm_parser.get_scenes(
         Scorm_parser.toJson(
             Scorm_parser.cleanse(raw_file)
         )
-    )
-    console.log("file from datajs")
-    console.log(json)
+    );
 
+    // Remove unused scenes
+    //! REMEMBER access json.scenes to get the scenes
+    scenes = Scorm_parser.remove_from_back(json.scenes, 4);
 
+    // Procesamiento paralelo de todas las escenas y slides
+    const processedScenes = await Promise.all(
+        scenes.map(async scene => (
+
+            {
+            slides: await Promise.all(
+                (scene.slides || []).map(async slide => {
+                    
+                    try {
+
+                        if(slide.title){
+
+                        }
+
+                        const slideContent = await get_file_via_pluginfile(data_id, slide.html5url, "text");
+
+                        return Scorm_parser.flattenSlide(
+                            Scorm_parser.toJson(
+                                Scorm_parser.cleanse(slideContent)
+                            )
+                        );
+
+                    } catch (error) {
+                        console.error(`Error loading slide ${slide.html5url}:`, error);
+                        return null;  // Mantenemos el fallo controlado
+                    }
+
+                })
+
+            ).then(slides => slides.filter(Boolean))  // Filtramos slides fallidas
+        }))
+    );
+
+    console.log("file from datajs");
+    console.log(processedScenes);
 }
 
 
@@ -435,62 +471,3 @@ let private_urls = {}
 
 loadData();
 
-
-
-
-
-
-
-
-async function doAllFetch(){
-    let text;
-    let json; 
-
-    let data_js = await get_file_via_pluginfile("html5/data/js/data.js", "text");
-    text = data_js;
-
-    text = Scorm_parser.cleanse(text);
-    json = Scorm_parser.toJson(text);
-    json = Scorm_parser.get_scenes(json);
-    let scenes = json.scenes;
-    
-    // Remove four to only leave the actual scenes
-    scenes = Scorm_parser.remove_from_back(scenes, 4);
-    
-    // Procesamiento paralelo de todas las escenas y slides
-    const processedScenes = await Promise.all(
-        scenes.map(async scene => (
-            
-            // We want to skip the last scenes, they contain nothing of interest
-            
-            {
-            slides: await Promise.all(
-                (scene.slides || []).map(async slide => {
-                    
-                    try {
-
-                        if(slide.title){
-
-                        }
-
-                        const slideContent = await get_file_via_pluginfile(slide.html5url, "text");
-
-                        return Scorm_parser.flattenSlide(
-                            Scorm_parser.toJson(
-                                Scorm_parser.cleanse(slideContent)
-                            )
-                        );
-
-                    } catch (error) {
-                        console.error(`Error loading slide ${slide.html5url}:`, error);
-                        return null;  // Mantenemos el fallo controlado
-                    }
-
-                })
-
-            ).then(slides => slides.filter(Boolean))  // Filtramos slides fallidas
-        }))
-    );
-
-    return processedScenes;
-}
