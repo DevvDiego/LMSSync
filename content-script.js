@@ -150,11 +150,7 @@ class Scorm_parser {
         };
     }
 
-    static get_slide_info(data){
-
-    }
-
-        
+    
     /**
      * 
      * @param {string} text 
@@ -186,8 +182,7 @@ class Scorm_parser {
 
     /**
      * Simplify slide no matter its normal or title slide
-     */
-    // Método principal para aplanar cualquier tipo de slide
+    */
     static flattenSlide(slideData) {
         if (Scorm_parser.isNormalSlide(slideData) || Scorm_parser.isBibliographySlide(slideData)) {
             return Scorm_parser.processNormalSlide(slideData);
@@ -406,7 +401,6 @@ async function get_file_via_pluginfile(data_id, urls, response_mode){
 
 
 const begin = async () => {
-    let text;
     let json; 
     let data_id = await get_course_data_id();
 
