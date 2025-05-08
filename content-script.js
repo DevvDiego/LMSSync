@@ -176,39 +176,113 @@ class Scorm_parser {
 
 
     /**
+     * Remove a certain amount of scenes from the back of the aray
+     * @param {Array} scenes 
+     * @param {number} elementsToRemove 
+     */
+    static remove_from_back(scenes, elementsToRemove = 4) {
+        return scenes.slice(0, -elementsToRemove); // use - to start from the end of the array
+    }
+
+    /**
      * Simplify slide no matter its normal or title slide
      */
+    // Método principal para aplanar cualquier tipo de slide
     static flattenSlide(slideData) {
-        const isNormal = slideData.slideLayers?.[0]?.objects?.[0]?.textLib;
-        
+        if (Scorm_parser.isNormalSlide(slideData) || Scorm_parser.isBibliographySlide(slideData)) {
+            return Scorm_parser.processNormalSlide(slideData);
+        }
+        return Scorm_parser.processTitleSlide(slideData);
+    }
+
+    // Detección de slides normales
+    static isNormalSlide(slideData) {
+        return Scorm_parser.hasNestedObjectsWithText(slideData.slideLayers);
+    }
+
+    // Detección de slides de bibliografía
+    static isBibliographySlide(slideData) {
+        return slideData.lmsId?.startsWith("Slide1") && 
+                slideData.title?.toLowerCase().includes("bibliografía");
+    }
+
+    // Búsqueda recursiva de objetos con texto
+    static hasNestedObjectsWithText(layers) {
+        return layers?.some(layer => {
+            const checkObjects = (objs) => objs?.some(obj => {
+                if (obj.textLib) return true;
+                if (obj.objects) return checkObjects(obj.objects);
+                return false;
+            });
+            return checkObjects(layer.objects);
+        });
+    }
+
+    // Procesamiento de slides normales o bibliografía
+    static processNormalSlide(slideData) {
         return {
             title: slideData.title,
-            slideNumberInScene: slideData.slideNumberInScene,
+            slideNumberInScene: slideData.slideNumberInScene || 0,
             lmsId: slideData.lmsId,
             id: slideData.id,
             slideLayers: slideData.slideLayers.map(layer => ({
-                textLib: isNormal ? Scorm_parser.processNormalLayer(layer) : Scorm_parser.processTitleLayer(layer),
-                altText: Scorm_parser.extractAltText(layer, isNormal)
+                textLib: Scorm_parser.extractNestedTextLib(layer.objects),
+                altText: Scorm_parser.extractNestedAltText(layer.objects)
             })).filter(layer => layer.textLib.length > 0)
         };
     }
-    
-    static processNormalLayer(layer) {
-        return layer.objects?.flatMap(obj => 
-            obj.textLib?.flatMap(textItem => 
-                textItem.vartext?.blocks.map(block => ({
-                    spans: block.spans.map(span => ({
-                        text: span.text,
-                        style: Scorm_parser.filterSpanStyle(span.style)
-                    })),
-                    style: Scorm_parser.filterBlockStyle(block.style)
-                })) || []
-            ) || []
-        ) || [];
+
+    // Procesamiento de slides tipo título
+    static processTitleSlide(slideData) {
+        return {
+            title: slideData.title,
+            slideNumberInScene: slideData.slideNumberInScene || 0,
+            lmsId: slideData.lmsId,
+            id: slideData.id,
+            slideLayers: (slideData.slideLayers || []).map(layer => ({
+                textLib: Scorm_parser.cleanTextLib(layer.textLib || []),
+                altText: layer.altText || ''
+            }))
+        };
     }
-    
-    static processTitleLayer(layer) {
-        return (layer.textLib || []).map(item => ({
+
+    // Extracción recursiva de textLib
+    static extractNestedTextLib(objects, result = []) {
+        objects?.forEach(obj => {
+            if (obj.textLib) {
+                obj.textLib.forEach(textItem => {
+                    const blocks = textItem.vartext?.blocks || [];
+                    blocks.forEach(block => {
+                        result.push({
+                            spans: block.spans.map(span => ({
+                                text: span.text,
+                                style: Scorm_parser.filterSpanStyle(span.style)
+                            })),
+                            style: Scorm_parser.filterBlockStyle(block.style)
+                        });
+                    });
+                });
+            }
+            if (obj.objects) {
+                Scorm_parser.extractNestedTextLib(obj.objects, result);
+            }
+        });
+        return result;
+    }
+
+    // Extracción recursiva de altText
+    static extractNestedAltText(objects) {
+        return objects?.map(obj => {
+            const childText = obj.objects ? Scorm_parser.extractNestedAltText(obj.objects) : '';
+            return obj.data?.vectorData?.altText ? 
+                    `${obj.data.vectorData.altText}\n${childText}` : 
+                    childText;
+        }).filter(Boolean).join('\n') || '';
+    }
+
+    // Limpieza de textLib para slides simples
+    static cleanTextLib(textLib) {
+        return textLib.map(item => ({
             spans: (item.spans || []).map(span => ({
                 text: span.text,
                 style: Scorm_parser.filterSpanStyle(span.style)
@@ -216,14 +290,8 @@ class Scorm_parser {
             style: Scorm_parser.filterBlockStyle(item.style)
         }));
     }
-    
-    static extractAltText(layer, isNormal) {
-        return isNormal 
-            ? layer.objects?.map(o => o.data?.vectorData?.altText).filter(Boolean).join('\n') || ''
-            : layer.altText || '';
-    }
-    
-    // Filtros de estilo reutilizables
+
+    // Filtros de estilo
     static filterSpanStyle(style) {
         return {
             fontFamily: style?.fontFamily,
@@ -232,7 +300,7 @@ class Scorm_parser {
             fontIsItalic: style?.fontIsItalic ?? false
         };
     }
-    
+
     static filterBlockStyle(style) {
         return {
             flowDirection: style?.flowDirection,
@@ -242,6 +310,28 @@ class Scorm_parser {
         };
     }
 
+    // Método para cargar todas las slides (de tu ejemplo anterior)
+    static async loadAllSlides(scenes) {
+        return Promise.all(scenes.map(async scene => ({
+            ...scene,
+            processedSlides: await Promise.all(
+                (scene.slides || []).map(async slide => {
+                    try {
+                        const content = await get_file_via_pluginfile(slide.html5url, "text");
+                        return Scorm_parser.flattenSlide(
+                            Scorm_parser.toJson(
+                                Scorm_parser.cleanse(content)
+                            )
+                        );
+                    } catch (error) {
+                        console.error(`Error loading slide ${slide.html5url}:`, error);
+                        return null;
+                    }
+                })
+            ).then(slides => slides.filter(Boolean))
+
+        })))
+    }
 }
 
 
@@ -369,32 +459,46 @@ async function doAllFetch(){
 
     text = Scorm_parser.cleanse(text);
     json = Scorm_parser.toJson(text);
-
-
     json = Scorm_parser.get_scenes(json);
     let scenes = json.scenes;
-    console.log("scenes")
-    console.log(scenes)
-   
-    // !doesnt work on some slides
-    text = await get_file_via_pluginfile(scenes[3].slides[10].html5url, "text");
-    text = Scorm_parser.cleanse(text);
-    json = Scorm_parser.toJson(text);
-    json = Scorm_parser.flattenSlide(json);
-    console.log(json)
-
-    text = await get_file_via_pluginfile(scenes[3].slides[3].html5url, "text");
-    text = Scorm_parser.cleanse(text);
-    json = Scorm_parser.toJson(text);
-    json = Scorm_parser.flattenSlide(json);
-    console.log(json)
-
-
-
-    // text = await get_file_via_pluginfile(scenes[3].slides[3].html5url, "text");
-    // text = Scorm_parser.cleanse(text);
-    // json = Scorm_parser.toJson(text);
-    // console.log(json)
     
-    return json
+    // Remove four to only leave the actual scenes
+    scenes = Scorm_parser.remove_from_back(scenes, 4);
+    
+    // Procesamiento paralelo de todas las escenas y slides
+    const processedScenes = await Promise.all(
+        scenes.map(async scene => (
+            
+            // We want to skip the last scenes, they contain nothing of interest
+            
+            {
+            slides: await Promise.all(
+                (scene.slides || []).map(async slide => {
+                    
+                    try {
+
+                        if(slide.title){
+
+                        }
+
+                        const slideContent = await get_file_via_pluginfile(slide.html5url, "text");
+
+                        return Scorm_parser.flattenSlide(
+                            Scorm_parser.toJson(
+                                Scorm_parser.cleanse(slideContent)
+                            )
+                        );
+
+                    } catch (error) {
+                        console.error(`Error loading slide ${slide.html5url}:`, error);
+                        return null;  // Mantenemos el fallo controlado
+                    }
+
+                })
+
+            ).then(slides => slides.filter(Boolean))  // Filtramos slides fallidas
+        }))
+    );
+
+    return processedScenes;
 }
