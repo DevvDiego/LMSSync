@@ -19,7 +19,7 @@
       "default_popup": "popup.html"
     },
     "web_accessible_resources": [{
-      "resources": ["urls.json"],
+      "resources": ["private.json"],
       "matches": ["<all_urls>"]
     }]
 }
