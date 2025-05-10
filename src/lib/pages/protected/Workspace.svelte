@@ -11,13 +11,10 @@
     <Navbar/>
     
     <header class="text-md">
-        <h1>Status:</h1>
+        <h1>Status:{authState.isLoggedIn}</h1>
     
-        <h1>
-            email: {authState.user.email}
-            password: {authState.user.password}
-        </h1>
-
+        
+        <!-- ! move logout into a separate page? -->
         <button onclick={()=>logout()} class="bg-green-300">
             logout
         </button>

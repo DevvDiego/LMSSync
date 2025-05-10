@@ -3,12 +3,12 @@ export const authState = $state({
     user: null,
 });
 
-export const login = (userData) => {
+export const login = () => {
     authState.isLoggedIn = true;
-    authState.user = userData;
+    // authState.user = userData;
 }
 
 export const logout = () => {
     authState.isLoggedIn = false;
-    authState.user = null;
+    // authState.user = null;
 }
