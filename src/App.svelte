@@ -1,28 +1,31 @@
 <script>
-    import Button from "./lib/components/Button.svelte";
-
+    //Pages
+    import Login from "./lib/pages/auth/Login.svelte";
+    import Workspace from "./lib/pages/protected/Workspace.svelte";
+    
+    let isLoggedIn = false;
 
 </script>
 
-<main class="w-dvw h-screen  text-black dark:text-white bg-neutral-500 dark:bg-neutral-900">
+<main class="w-dvw h-screen text-black dark:text-white dark:bg-gray-950">
 
-    <div class="m-auto w-64 h-8/12 border-2 border-amber-900 text-black dark:text-white bg-neutral-500 dark:bg-neutral-900">
+<div class="m-auto w-64 h-10/12 border-2 border-amber-900 text-black bg-neutral-900 dark:text-white">
+    
+    {#if isLoggedIn}
         
-        <header class="w-full my-3 text-2xl text-center font-bold">
-            <p>
-                <span class="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-white">
-                    LMS
-                </span>
-                Sync
-            </p>
-        </header>
+        <Workspace/>
+    
+    {:else if !isLoggedIn}
+    
+        <Login bind:isLoggedIn />
+    
+    {:else}
 
-        <div>
-            <Button>
-                Button
-            </Button>
-        </div>
+        <h1>Error</h1>
 
-    </div>
+    {/if}
+
+    
+</div>
 
 </main>
