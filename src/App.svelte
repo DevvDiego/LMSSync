@@ -1,9 +1,8 @@
 <script>
-    //Pages
     import Login from "./lib/pages/auth/Login.svelte";
     import Workspace from "./lib/pages/protected/Workspace.svelte";
+    import { authState } from "./lib/stores/auth.svelte";
     
-    let isLoggedIn = false;
 
 </script>
 
@@ -11,13 +10,13 @@
 
 <div class="m-auto w-64 h-10/12 border-2 border-amber-900 text-black bg-neutral-900 dark:text-white">
     
-    {#if isLoggedIn}
+    {#if authState.isLoggedIn}
         
         <Workspace/>
     
-    {:else if !isLoggedIn}
+    {:else if !authState.isLoggedIn}
     
-        <Login bind:isLoggedIn />
+        <Login/>
     
     {:else}
 

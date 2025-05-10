@@ -1,26 +1,29 @@
 <script>
     import Button from "../../components/Button.svelte";
     import Input from "../../components/Input.svelte";
+    import { login } from "../../stores/auth.svelte.js";
 
 
     function handleForm(event) {
-        event.preventDefault(); // Evita el comportamiento por defecto
-
-        const formData = new FormData(event.target); // Captura los datos del formulario
+        event.preventDefault();
+        const formData = new FormData(event.target);
 
         if(formData.get("email") == "diego" && formData.get("password") == "123"){
-            isLoggedIn = true;
+            login({
+                "email":formData.get("email"),
+                "password":formData.get("password")
+            });
         }
         
         
     }
 
 
-    let { isLoggedIn = $bindable(false) } = $props();
+    let {  } = $props();
 </script>
 
 
-<section class="">
+<section>
     <header>
         <h1 class="text-xl text-center py-3">
             Log in to LMS Sync
