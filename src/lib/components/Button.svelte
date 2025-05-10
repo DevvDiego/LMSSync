@@ -1,15 +1,18 @@
 <script>
 
-    let { children } = $props();
+    let { isPrimary = false, ...props } = $props();
 </script>
 
 
-<button class=" min-w-4/12
-    bg-green-900 hover:bg-green-950 active:bg-black active:text-white    
-    rounded px-3 py-1 text-center
-    select-none
+<button {...props}
+        class="
+        {props.class} 
+        {isPrimary ? "bg-blue-800 active:bg-blue-900":"bg-blue-500/60 active:bg-blue-500/60"}
+        p-1
+        rounded-lg
+        
     ">
     
-    {@render children?.()}
+    {@render props.children?.()}
 
 </button>
