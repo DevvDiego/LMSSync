@@ -5,7 +5,7 @@
     import { navigateTo } from "../../stores/page.svelte";
 
     function fetchLogout(){
-        Fetcher.fetchLogout(); //api call
+        Fetcher.logout(); //api call
         logout(); //local state
         navigateTo("login"); //update current page
     }

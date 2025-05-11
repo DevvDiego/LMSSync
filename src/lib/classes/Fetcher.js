@@ -27,7 +27,7 @@ export class Fetcher{
      * Checks if the current session is valid
      * @param {FormData} formData 
      */
-    static async fetchLogin(formData){
+    static async login(formData){
         let url = "http://localhost/www/tradex/backend/auth/login.php"
         const res = await fetch(url, {
             method: "POST",
@@ -39,6 +39,24 @@ export class Fetcher{
                 "username": formData.get("username"),
                 "password": formData.get("password")
             }),
+            
+        });
+
+        return res
+    }
+
+
+    /**
+     * Log out the user  
+     */
+    static async logout(){
+        let url = "http://localhost/www/tradex/backend/auth/logout.php"
+        const res = await fetch(url, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
             
         });
 

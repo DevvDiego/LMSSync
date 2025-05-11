@@ -9,7 +9,7 @@
         event.preventDefault();
         const formData = new FormData(event.target);
 
-        const res = await Fetcher.fetchLogin(formData);
+        const res = await Fetcher.login(formData);
         const json = await res.json();
 
         if( !res.ok ){
