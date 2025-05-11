@@ -1,4 +1,6 @@
 <script>
+    import { navigateTo } from "../stores/page.svelte";
+
 
 </script>
 
@@ -15,13 +17,23 @@
         </li>
 
         <li>
-            <div class="
+            <button  onclick={()=>navigateTo("workspace")} class="
                 w-6 h-6 
                 flex justify-center items-center
                 rounded-full border border-green-300
             ">
-                <span class="text-xs">A</span>
-            </div>
+                <span class="text-xs">W</span>
+            </button>
+        </li>
+
+        <li>
+            <button  onclick={()=>navigateTo("settings")} class="
+                w-6 h-6 
+                flex justify-center items-center
+                rounded-full border border-green-300
+            ">
+                <span class="text-xs">S</span>
+            </button>
         </li>
     </ul>
 </nav>
