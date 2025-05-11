@@ -3,6 +3,7 @@
     import Button from "../../components/Button.svelte";
     import Input from "../../components/Input.svelte";
     import { login } from "../../stores/auth.svelte";
+    import { navigateTo } from "../../stores/page.svelte";
 
     async function handleForm(event){
         event.preventDefault();
@@ -12,7 +13,7 @@
         const json = await res.json();
 
         if( !res.ok ){
-
+ 
             status = {
                 code: res.status,
                 response: json.message
@@ -21,6 +22,7 @@
             return
         }
 
+        //! remove ?
         status = {
             code: res.status,
             response: json.message
@@ -28,6 +30,7 @@
 
         
         login();
+        navigateTo("workspace");
 
         return
     }

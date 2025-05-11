@@ -1,8 +1,11 @@
 <script>
     import Login from "./lib/pages/auth/Login.svelte";
     import Workspace from "./lib/pages/protected/Workspace.svelte";
-    import { authState } from "./lib/stores/auth.svelte";
+    import Settings from "./lib/pages/protected/Settings.svelte";
+    import { page } from "./lib/stores/page.svelte";
     
+
+    // const pages = [ "login", "workspace", "settings" ]
 
 </script>
 
@@ -10,20 +13,19 @@
 
 <div class="m-auto w-64 h-10/12 border-2 border-amber-900 text-black bg-neutral-900 dark:text-white">
     
-    {#if authState.isLoggedIn}
-        
-        <Workspace/>
-    
-    {:else if !authState.isLoggedIn}
-    
-        <Login/>
-    
-    {:else}
+    {#if page.current == "login"}
 
-        <h1>Error</h1>
+        <Login/>
+
+    {:else if page.current == "workspace"}
+
+        <Workspace/>
+
+    {:else if page.current == "settings"}
+
+        <Settings/>
 
     {/if}
-
     
 </div>
 
