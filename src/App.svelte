@@ -3,6 +3,7 @@
     import Workspace from "./lib/pages/protected/Workspace.svelte";
     import Settings from "./lib/pages/protected/Settings.svelte";
     import { page } from "./lib/stores/page.svelte";
+    import { authState } from "./lib/stores/auth.svelte";
     
 
     // const pages = [ "login", "workspace", "settings" ]
@@ -13,7 +14,8 @@
 
 <div class="m-auto w-64 h-10/12 border-2 border-amber-900 text-black bg-neutral-900 dark:text-white">
     
-    {#if page.current == "login"}
+    <!-- always add a backup check for a user being logged in -->
+    {#if (page.current == "login") || (!authState.isLoggedIn) }
 
         <Login/>
 
