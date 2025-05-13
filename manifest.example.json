@@ -14,7 +14,10 @@
       }
     ],
     "permissions": ["scripting", "activeTab", "storage"],
-    "host_permissions": ["*://*/*"],
+    "host_permissions": [ //! REMOVE COMMENTS ON BUILD, JUST FOR REFERENCE ON DEV MODE
+      "https://*/*", //page to obtain courses from
+      "*://*/backend/*" //API server
+    ],
     "action": {
       "default_popup": "popup.html"
     },
