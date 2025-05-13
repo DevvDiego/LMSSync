@@ -4,15 +4,13 @@
     import Settings from "./lib/pages/protected/Settings.svelte";
     import { page } from "./lib/stores/page.svelte";
     import { authState } from "./lib/stores/auth.svelte";
-    
-
-    // const pages = [ "login", "workspace", "settings" ]
 
 </script>
 
-<main class="w-dvw h-screen text-black dark:text-white dark:bg-gray-950">
-
-<div class="m-auto w-64 h-10/12 border-2 border-amber-900 text-black bg-neutral-900 dark:text-white">
+<main class="
+        text-black bg-neutral-900 dark:text-white dark:bg-gray-950
+        m-auto w-64 h-[450px] border-2 border-amber-900  
+    ">
     
     <!-- always add a backup check for a user being logged in -->
     {#if (page.current == "login") || (!authState.isLoggedIn) }
@@ -29,6 +27,4 @@
 
     {/if}
     
-</div>
-
 </main>
