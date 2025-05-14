@@ -172,13 +172,77 @@ class Scorm_parser {
 
 
     /**
-     * Remove a certain amount of scenes from the back of the aray
+     * Remove a certain amount of scenes from the back of the array
      * @param {Array} scenes 
      * @param {number} elementsToRemove 
      */
-    static remove_from_back(scenes, elementsToRemove = 4) {
+    static remove_from_back(scenes, elementsToRemove = 0) {
         return scenes.slice(0, -elementsToRemove); // use - to start from the end of the array
     }
+    /**
+     * Remove a certain amount of scenes from the front of the array
+     * @param {Array} scenes 
+     * @param {number} elementsToRemove 
+     */
+    static remove_from_front(scenes, elementsToRemove = 0) {
+        return scenes.slice(elementsToRemove); // we just return the copu of the array without the first elements
+    }
+
+    static finalFlattening(fullData) {
+        if (!Array.isArray(fullData)) return [];
+
+        return fullData
+            .filter((_, index) => index !== 0) // Excluir el primer elemento
+            .map((element) => {
+                if (!element.slides) return element; // Mantener elementos sin "slides"
+
+                let slide_altText;
+
+                // Transformar slides
+                const transformedSlides = element.slides.map((slide) => {
+                    const slideLayers = [];
+                    
+                    // Extraer textos de los spans
+                    if (slide.slideLayers) {
+                    slide.slideLayers.forEach((layer) => {
+
+                        // use this to keep the altText inside a layer
+                        // slideLayers.push({
+                        //     altText: layer.altText
+                        // });
+
+                        //use this to make a global property of altText for the slide
+                        slide_altText = layer.altText;
+
+                        if (layer.textLib) {
+                        layer.textLib.forEach((textEntry) => {
+                            if (textEntry.spans) {
+                            textEntry.spans.forEach((span) => {
+                                slideLayers.push({
+                                    text: span.text,
+                                    style: span.style
+                                });
+                            });
+                            }
+                        });
+                        }
+                    });
+                    }
+
+                    return {
+                        title: slide.title,
+                        slideNumberInScene: slide.slideNumberInScene,
+                        lmsId: slide.lmsId,
+                        id: slide.id,
+                        slideLayers: slideLayers,
+                        altText: slide_altText
+                    };
+                });
+
+                return { slides: transformedSlides };
+            });
+    }
+
 
     /**
      * Simplify slide no matter its normal or title slide
@@ -305,7 +369,6 @@ class Scorm_parser {
         };
     }
 
-    // Método para cargar todas las slides (de tu ejemplo anterior)
     static async loadAllSlides(scenes) {
         return Promise.all(scenes.map(async scene => ({
             ...scene,
@@ -450,8 +513,13 @@ const begin = async () => {
         }))
     );
 
-    console.log("file from datajs");
-    console.log(processedScenes);
+    //remove first to "scenes" objects because these will always be empty
+    let finishedScenes = Scorm_parser.remove_from_front(processedScenes, 2);
+
+
+    finishedScenes = Scorm_parser.finalFlattening(finishedScenes);
+
+    console.log(finishedScenes);
 }
 
 
