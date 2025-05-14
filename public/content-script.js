@@ -515,11 +515,14 @@ const begin = async () => {
 
     //remove first to "scenes" objects because these will always be empty
     let finishedScenes = Scorm_parser.remove_from_front(processedScenes, 2);
-
-
+    
+    // returns a array like: [ { slides:[{...}] } ]
     finishedScenes = Scorm_parser.finalFlattening(finishedScenes);
 
-    console.log(finishedScenes);
+    // in order to further simplify, we remove the array wrapper
+    let slides_obj = finishedScenes[0]; // we now only got "{ slides:[{...}] }""
+
+    console.log(slides_obj);
 }
 
 
