@@ -212,7 +212,7 @@ class Scorm_parser {
                         // });
 
                         //use this to make a global property of altText for the slide
-                        slide_altText = layer.altText;
+                        slide_altText = Scorm_parser.cleanAltText(layer.altText);
 
                         if (layer.textLib) {
                         layer.textLib.forEach((textEntry) => {
@@ -243,6 +243,13 @@ class Scorm_parser {
             });
     }
 
+    static cleanAltText(altText) {
+        // Eliminar nombres de imágenes (ej: "Imagen 247.png")
+        let cleaned = altText.replace(/Imagen\s+\w+\.png/g, '');
+        // Eliminar saltos de línea y espacios redundantes
+        cleaned = cleaned.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        return cleaned;
+    }
 
     /**
      * Simplify slide no matter its normal or title slide
