@@ -58,7 +58,7 @@
             </div>            
         {/if}
 
-        <Input text="Username" type="text" name="username"/>        
+        <Input text="Email" type="text" name="email"/>        
         <Input text="Password" type="text" name="password"/>
         
         <Button class="w-7/12" type="submit" isPrimary={true}>
