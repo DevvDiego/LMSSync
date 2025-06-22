@@ -28,7 +28,15 @@ export class Fetcher{
      * @param {FormData} formData 
      */
     static async login(formData){
-        let url = "http://localhost/www/tradex/backend/auth/login.php"
+
+        //! Add some kind of validation module
+        // let email = formData.get("email")  ?? "";
+        // let password = formData.get("password") ?? "";
+
+        // if(email == ""){ return null }
+        // if(password == ""){ return null }
+
+        let url = "http://localhost/www/tradex/backend/api/auth/login"
         const res = await fetch(url, {
             method: "POST",
             credentials: "include",
@@ -36,7 +44,7 @@ export class Fetcher{
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "username": formData.get("username"),
+                "email": formData.get("email"),
                 "password": formData.get("password")
             }),
             
@@ -50,7 +58,7 @@ export class Fetcher{
      * Log out the user  
      */
     static async logout(){
-        let url = "http://localhost/www/tradex/backend/auth/logout.php"
+        let url = "http://localhost/www/tradex/backend/api/auth/logout"
         const res = await fetch(url, {
             method: "POST",
             credentials: "include",
