@@ -1,11 +1,8 @@
 {
     "manifest_version": 3,
     "name": "Extensión SCORM",
-    "version": "1.0",
+    "version": "1.7.0",
     "description": "Accede a datos de SCORM",
-    "background": {
-      "service_worker": "background.js"
-    },
     "content_scripts": [
       {
         "matches": ["https://*/*"],
@@ -19,7 +16,7 @@
       "*://*/backend/*" //API server
     ],
     "action": {
-      "default_popup": "popup.html"
+      "default_popup": "index.html"
     },
     "web_accessible_resources": [{
       "resources": ["private.json"],
