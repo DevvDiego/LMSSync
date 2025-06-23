@@ -13,27 +13,16 @@
         }
     });
 
-    function getCourse(){
 
-        console.log("get course");
+    async function handleScrape(){
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        scraped_slides = await chrome.tabs.sendMessage( tab.id, {action: "begin_scrapping"} );
 
-    }
-
-    async function saveToAccount(){
-
-        console.log("save To Account");
-        const res = await fetch("http://localhost/www/tradex/backend/api/app.php", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            }            
-        });
-        console.log( await res.text() )
-
+        console.log(scraped_slides);
 
     }
 
+    let scraped_slides = $state(null);
     
 </script>
 
@@ -49,14 +38,18 @@
     <section>
         <h1 class="py-2">Course opions</h1>
 
-        <Button onclick={getCourse}>
+        <!-- <Button onclick={getCourse}>
             Get course
         </Button>
         
         <Button onclick={saveToAccount}>
             Save course
-        </Button>
+        </Button> -->
 
+        <Button onclick={handleScrape}>
+            Extraer slides
+        </Button>
+         
     </section>
-    
+
 </section>

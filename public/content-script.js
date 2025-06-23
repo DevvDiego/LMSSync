@@ -470,11 +470,95 @@ async function get_file_via_pluginfile(data_id, urls, response_mode){
 }
 
 
-const begin = async () => {
+// const begin = async () => {
+//     const data_id = await get_course_data_id();
+//     const raw_file = await get_file_via_pluginfile(data_id, "html5/data/js/data.js", "text");
+//     let json;
+//     let scenes; 
+    
+//     // Apply all cleansing functions
+//     json = Scorm_parser.get_scenes(
+//         Scorm_parser.toJson(
+//             Scorm_parser.cleanse(raw_file)
+//         )
+//     );
+
+//     // Remove unused scenes
+//     //! REMEMBER access json.scenes to get the scenes
+//     scenes = Scorm_parser.remove_from_back(json.scenes, 4);
+
+//     // Procesamiento paralelo de todas las escenas y slides
+//     const processedScenes = await Promise.all(
+//         scenes.map(async scene => (
+
+//             {
+//             slides: await Promise.all(
+//                 (scene.slides || []).map(async slide => {
+                    
+//                     try {
+
+//                         if(slide.title){
+
+//                         }
+
+//                         const slideContent = await get_file_via_pluginfile(data_id, slide.html5url, "text");
+
+//                         return Scorm_parser.flattenSlide(
+//                             Scorm_parser.toJson(
+//                                 Scorm_parser.cleanse(slideContent)
+//                             )
+//                         );
+
+//                     } catch (error) {
+//                         console.error(`Error loading slide ${slide.html5url}:`, error);
+//                         return null;  // Mantenemos el fallo controlado
+//                     }
+
+//                 })
+
+//             ).then(slides => slides.filter(Boolean))  // Filtramos slides fallidas
+//         }))
+//     );
+
+//     //remove first to "scenes" objects because these will always be empty
+//     let finishedScenes = Scorm_parser.remove_from_front(processedScenes, 2);
+    
+//     // returns a array like: [ { slides:[{...}] } ]
+//     finishedScenes = Scorm_parser.finalFlattening(finishedScenes);
+
+//     // in order to further simplify, we remove the array wrapper
+//     let slides_obj = finishedScenes[0]; // we now only got "{ slides:[{...}] }""
+
+//     console.log(slides_obj);
+// }
+
+
+
+/**
+ * @returns Object
+ */
+const scrape_slides = async () => {
+    //load private urls
+    const res = await fetch(chrome.runtime.getURL("private.json"))
+    const data = await res.json();
+    private_urls = data // set the script global request url to the external file urls
+
+
+    //begin scrapping
     const data_id = await get_course_data_id();
     const raw_file = await get_file_via_pluginfile(data_id, "html5/data/js/data.js", "text");
     let json;
-    let scenes; 
+    let scenes;
+
+    /**
+     * ? What this does?
+     * 
+     * slides json is surrounded by some javascript that ties them down to the page window
+     * so in order to be able to parse that json, we first need to remove that.
+     * 
+     * After removing the js we can begin parsing and cleansing the raw slides
+     * 
+     */
     
     // Apply all cleansing functions
     json = Scorm_parser.get_scenes(
@@ -482,6 +566,14 @@ const begin = async () => {
             Scorm_parser.cleanse(raw_file)
         )
     );
+
+
+    /**
+     * ? What this does?
+     * 
+     * Removes slides "introduccion", "mapa conceptual" and similar slides that 
+     * are unnecessary
+     */
 
     // Remove unused scenes
     //! REMEMBER access json.scenes to get the scenes
@@ -530,22 +622,23 @@ const begin = async () => {
     let slides_obj = finishedScenes[0]; // we now only got "{ slides:[{...}] }""
 
     console.log(slides_obj);
-}
-
-
-const loadData = async () =>{
-    const res = await fetch(chrome.runtime.getURL("private.json"))
-    const data = await res.json();
-
-    private_urls = data // set the script global request url to the external file urls
-
-
-    begin();
+    return slides_obj;
 
 }
 
 
 let private_urls = {}
 
-loadData();
 
+
+
+//message callbacks with popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "begin_scrapping") {
+        scrape_slides()
+        .then( slides => sendResponse({status: "success", data: slides}) )
+        .catch( error => sendResponse({status: "error", error: error}) );
+    }
+
+    return true; // Due to async call its necessary
+});
