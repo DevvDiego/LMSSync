@@ -127,7 +127,31 @@ class Scorm_parser {
         return text;
     }
 
+    /**
+     * returns an array contaning the course info
+     * @return {[title: string, platform_id: number]}
+     * @throws {Error} If any required data is missing or invalid
+     */
+    static get_course_info(){
+        const element = document.querySelector("#page-mast a");
+        if( !element ) { throw new Error("Could not find course title tag"); }
+        
+        const title = element.innerText;
+        if( !title ) { throw new Error("Could not find any course title"); }
+        
+        //you get the TAG url, not the window url
+        let url = element.href;
+        if( !url ) { throw new Error("Could not find any course id"); }
+        
+        //how to add null verification here?
+        const course_tag_url = new URL(element.href);
+        const platform_id = course_tag_url.searchParams.get(id);
 
+        console.log(title)
+        console.log(platform_id)
+        return [title, platform_id];
+
+    }
 
     /**
      * Simplifica un JSON de estructura SCORM, extrayendo solo datos esenciales.
@@ -626,6 +650,10 @@ const scrape_slides = async () => {
 
 }
 
+const get_course = async () => {
+
+    return Scorm_parser.get_course_info();
+}
 
 let private_urls = {}
 
@@ -634,6 +662,14 @@ let private_urls = {}
 
 //message callbacks with popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
+    if (request.action === "get_course") {
+        get_course()
+        .then( response => sendResponse({status: "success", data: response}) )
+        .catch( error => sendResponse({status: "error", error: error}) );
+    }
+
+    
     if (request.action === "begin_scrapping") {
         scrape_slides()
         .then( slides => sendResponse({status: "success", data: slides}) )
